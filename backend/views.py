@@ -7,13 +7,12 @@ from django.core.validators import URLValidator
 from django.db import IntegrityError
 from django.db.models import Q, Sum, F
 from django.http import JsonResponse
-from requests import get
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from ujson import loads as load_json
-from yaml import load as load_yaml, Loader
+from .tasks import do_import
 
 from backend.models import Shop, Category, Product, ProductInfo, Parameter, ProductParameter, Order, OrderItem, \
     Contact, ConfirmEmailToken
@@ -422,6 +421,7 @@ class PartnerUpdate(APIView):
             return JsonResponse({'Status': False, 'Error': 'Только для магазинов'}, status=403)
 
         url = request.data.get('url')
+        file_path = request.data.get('file')
         if url:
             validate_url = URLValidator()
             try:
@@ -429,35 +429,13 @@ class PartnerUpdate(APIView):
             except ValidationError as e:
                 return JsonResponse({'Status': False, 'Error': str(e)})
             else:
-                stream = get(url).content
+                do_import.delay(url=url, user_id=request.user.id)
+        if file_path:
+            do_import.delay(file_path=file_path, user_id=request.user.id)
+        else:
+            return JsonResponse({'Status': False, 'Error': 'Неверно указан url или путь к файлу'}, status=403)
+        return JsonResponse({'Status': True})
 
-                data = load_yaml(stream, Loader=Loader)
-
-                shop, _ = Shop.objects.get_or_create(name=data['shop'], user_id=request.user.id)
-                for category in data['categories']:
-                    category_object, _ = Category.objects.get_or_create(id=category['id'], name=category['name'])
-                    category_object.shops.add(shop.id)
-                    category_object.save()
-                ProductInfo.objects.filter(shop_id=shop.id).delete()
-                for item in data['goods']:
-                    product, _ = Product.objects.get_or_create(name=item['name'], category_id=item['category'])
-
-                    product_info = ProductInfo.objects.create(product_id=product.id,
-                                                              external_id=item['id'],
-                                                              model=item['model'],
-                                                              price=item['price'],
-                                                              price_rrc=item['price_rrc'],
-                                                              quantity=item['quantity'],
-                                                              shop_id=shop.id)
-                    for name, value in item['parameters'].items():
-                        parameter_object, _ = Parameter.objects.get_or_create(name=name)
-                        ProductParameter.objects.create(product_info_id=product_info.id,
-                                                        parameter_id=parameter_object.id,
-                                                        value=value)
-
-                return JsonResponse({'Status': True})
-
-        return JsonResponse({'Status': False, 'Errors': 'Не указаны все необходимые аргументы'})
 
 
 class PartnerState(APIView):

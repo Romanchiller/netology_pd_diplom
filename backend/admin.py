@@ -54,9 +54,12 @@ class CustomUserAdmin(UserAdmin):
             'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
         }),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
+
     )
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff',)
-    readonly_fields = ('contacts',)
+    list_display = ('email', 'username', 'is_active', 'is_staff', 'company','type', 'shop',)
+
+    list_filter = ['type', 'is_active', 'is_staff', 'company']
+
 
 
 
@@ -67,8 +70,9 @@ class ShopAdmin(admin.ModelAdmin):
         (None, {'fields': ('name', 'state')}),
         ('Additional Info', {'fields': ('url', 'user')}),
     )
-    list_display = ('name', 'state', 'url',)
+    list_display = ('name', 'user', 'url', 'state')
     inlines = [CategoryShopInline, ProductInfoShopInline]
+    list_filter = ['state']
 
 
 
@@ -84,21 +88,25 @@ class CategoryAdmin(admin.ModelAdmin):
 class ProductAdmin(admin.ModelAdmin):
     model = Product
     list_display = ['name', 'category',]
+    list_filter = ['category']
+
 
 
 @admin.register(ProductInfo)
 class ProductInfoAdmin(admin.ModelAdmin):
     model = ProductInfo
     fieldsets = (
-        (None, {'fields': ('product', 'model', 'external_id', 'quantity')}),
+        (None, {'fields': ('product', 'model', ('external_id', 'quantity'))}),
         ('Цены', {'fields': ('price', 'price_rrc')}),
     )
     list_display = ('product', 'external_id', 'price', 'price_rrc', 'quantity')
     inlines = [ProductParameterInline]
 
 
+
 @admin.register(Parameter)
 class ParameterAdmin(admin.ModelAdmin):
+    list_filter = []
     pass
 
 
@@ -110,9 +118,10 @@ class ProductParameterAdmin(admin.ModelAdmin):
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     model = Order
-    fields = ('user', 'state', 'contact')
+    fields = ('user', 'state')
     list_display = ('id', 'user', 'dt', 'state')
     inlines = [OrderItemInline, ]
+    list_filter = ['state']
 
 
 @admin.register(OrderItem)
@@ -122,8 +131,10 @@ class OrderItemAdmin(admin.ModelAdmin):
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
-    list_display = ('id', 'city', 'phone')
-    readonly_fields = ('user',)
+    list_display = ('user', 'city', 'phone')
+    list_filter = ['city']
+
+
 
 
 @admin.register(ConfirmEmailToken)
