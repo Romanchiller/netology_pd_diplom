@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.admin.exceptions import NotRegistered
 from django.contrib.admin.options import InlineModelAdmin
 from django.contrib.auth.admin import UserAdmin
 
@@ -63,6 +64,10 @@ class CustomUserAdmin(UserAdmin):
 
 
 
+
+
+
+
 @admin.register(Shop)
 class ShopAdmin(admin.ModelAdmin):
     model = Shop
@@ -73,6 +78,7 @@ class ShopAdmin(admin.ModelAdmin):
     list_display = ('name', 'user', 'url', 'state')
     inlines = [CategoryShopInline, ProductInfoShopInline]
     list_filter = ['state']
+    readonly_fields = ['user']
 
 
 
@@ -126,6 +132,7 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
+    list_display = ['order', 'product_info', 'quantity']
     pass
 
 
