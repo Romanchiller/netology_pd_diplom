@@ -38,6 +38,21 @@ services:
       - "6379:6379"
     restart: always
 
+  celery:
+    container_name: celery
+    build: .
+    command: celery -A netology_pd_diplom.celery worker --loglevel=info
+    volumes:
+      - .:/usr/src/app
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=${SECRET_KEY}
+      - DJANGO_ALLOWED_HOSTS=${SECRET_KEY}
+      - CELERY_BROKER=redis://redis:6379/0
+      - CELERY_BACKEND=redis://redis:6379/0
+    depends_on:
+      - django
+      - redis
 
 volumes:
   pgdbdata: null
